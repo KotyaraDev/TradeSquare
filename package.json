@@ -1,9 +1,13 @@
 {
   "name": "trade-square",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TradeSquare - Your platform for endless trading possibilities. Open the doors to a world of diverse goods and unique offers.",
   "main": "engine.js",
   "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KotyaraDev/TradeSquare.git"
+  },
   "author": "KotyaraDev",
   "license": "MIT",
   "bugs": {
@@ -12,6 +16,9 @@
   "homepage": "https://github.com/KotyaraDev/TradeSquare#readme",
   "dependencies": {
     "express": "^4.18.2",
-    "express-handlebars": "^7.1.2"
+    "express-handlebars": "^7.1.2",
+    "fs": "^0.0.1-security",
+    "mysql2": "^3.9.1",
+    "path": "^0.12.7"
   }
 }

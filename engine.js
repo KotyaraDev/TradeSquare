@@ -1,9 +1,19 @@
 const express = require("express");
 const hbs = require("express-handlebars");
+const fs = require("fs");
+const path = require("path");
+
+global.mysql = require('mysql2/promise');
+
+
+let engine = {};
+
 
 
 // ======= [ CONFIG ] =======
 global.EngineConfig = {
+    prefix: "[TradeSquare / Helper]:",
+
     listen: {
         protocol: "http",       // http or https
         host: "localhost",
@@ -18,8 +28,29 @@ global.EngineConfig = {
         port: "3306"
     },
 
-    cache: false
+    cache: false,
 }
+
+
+
+// ======= [ FUNCTIONS ] =======
+engine.functions = {};
+
+const functionsFolder = './functions';
+if(!fs.existsSync(functionsFolder)) {
+  fs.mkdirSync(functionsFolder);
+  console.log(`[FUNCTIONS | Folder] Folder '${functionsFolder}' created.`);
+}
+
+const functionFiles = fs.readdirSync(functionsFolder).filter(file => file.endsWith('.js'));
+console.log("============");
+for(const file of functionFiles) {
+  const functionName = file.split('.')[0];
+  engine.functions[functionName] = require(`./functions/${file}`);
+  console.log(`[FUNCTIONS | Load] ${functionName}`);
+}
+console.log("============\n");
+
 
 
 // ======= [ CORE ] =======
@@ -36,18 +67,52 @@ app.engine('hbs', hbs.engine({
 app.set('views', './views');
 app.set('view engine', 'hbs');
 
+
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
+
 if(EngineConfig.cache) {
     app.enable('view cache');
 }
 
 
-// ======= [ PAGES ] =======
-app.get('/', (req, res) => {
-    res.render('home', {
-        pageName: () => 'Home',
-    });
-});
+
+// ======= [ MYSQL CONNECT ] =======
+(async () => {
+    global.mysql_connection = null;
+    await engine.functions.mysql_connect();
+
+    // ======= [ PAGES ] =======
+
+    let _pages = await engine.functions.mysql_fetch("SELECT * FROM `pages` WHERE `status` = '1'");
+
+    if (_pages.length <= 0) {
+        app.get('/', (req, res) => {
+            res.render('errors/500', {
+                pageName: () => 'Server Error',
+                content: () => 'Pages not found in the database',
+            });
+        });
+    } else {
+        for (let Index = 0; Index < _pages.length; Index++) {  // Fix: Use < instead of >
+            app.get(_pages[Index].url, (req, res) => {
+                if(fs.existsSync(`./views/${_pages[Index].performer}`)) {
+                    res.render(_pages[Index].performer, {
+                        pageName: () => _pages[Index].name,
+                    });
+                } else {
+                    res.render('errors/500', {
+                        pageName: () => 'Server Error',
+                        content: () => `File <b>${_pages[Index].performer}</b> not be found in directory "./views".`,
+                    });
+                }
+            });
+        }
+    }
+
+    console.log(JSON.stringify(_pages));
+})();
+
 
 
 // ======= [ INIT CORE ] =======
-app.listen(EngineConfig.listen.port, () => console.log(`Starting to ${EngineConfig.listen.protocol}://${EngineConfig.listen.host}:${EngineConfig.listen.port}`));
+app.listen(EngineConfig.listen.port, () => console.log(`${EngineConfig.prefix} Starting to ${EngineConfig.listen.protocol}://${EngineConfig.listen.host}:${EngineConfig.listen.port}`));
