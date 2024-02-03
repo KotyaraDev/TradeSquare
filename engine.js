@@ -67,7 +67,6 @@ app.engine('hbs', hbs.engine({
 app.set('views', './views');
 app.set('view engine', 'hbs');
 
-
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
 if(EngineConfig.cache) {
@@ -87,9 +86,13 @@ if(EngineConfig.cache) {
 
     if (_pages.length <= 0) {
         app.get('/', (req, res) => {
-            res.render('errors/500', {
-                pageName: () => 'Server Error',
-                content: () => 'Pages not found in the database',
+            res.render('error', {
+                // pageName: () => 'Server Error',
+                // content: () => 'Pages not found in the database',
+
+                name: () => '500',
+                desc: () => 'Server Error',
+                layout: false
             });
         });
     } else {
@@ -100,16 +103,18 @@ if(EngineConfig.cache) {
                         pageName: () => _pages[Index].name,
                     });
                 } else {
-                    res.render('errors/500', {
-                        pageName: () => 'Server Error',
-                        content: () => `File <b>${_pages[Index].performer}</b> not be found in directory "./views".`,
+                    res.render('error', {
+                        // pageName: () => 'Server Error',
+                        // content: () => `File <b>${_pages[Index].performer}</b> not be found in directory "./views".`,
+
+                        name: () => '404',
+                        desc: () => 'Not found',
+                        layout: false
                     });
                 }
             });
         }
     }
-
-    console.log(JSON.stringify(_pages));
 })();
 
 
