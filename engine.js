@@ -1,12 +1,12 @@
-const express = require("express");
-const hbs = require("express-handlebars");
-const fs = require("fs");
-const path = require("path");
+const fs = require("fs"), path = require("path");
+const express = require("express"), hbs = require("express-handlebars");
+const bodyParser = require('body-parser'), cookieParser = require('cookie-parser');
+
 
 global.mysql = require('mysql2/promise');
 
 
-let engine = {};
+global.engine = {};
 
 
 
@@ -26,6 +26,10 @@ global.EngineConfig = {
         password: "",
         database: "trade-square",
         port: "3306"
+    },
+
+    cookie: {
+        secret: "123123",
     },
 
     cache: false,
@@ -66,7 +70,9 @@ app.engine('hbs', hbs.engine({
 }));
 app.set('views', './views');
 app.set('view engine', 'hbs');
-
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser(EngineConfig.cookie.secret));
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
 if(EngineConfig.cache) {
@@ -74,48 +80,57 @@ if(EngineConfig.cache) {
 }
 
 
-
 // ======= [ MYSQL CONNECT ] =======
 (async () => {
-    global.mysql_connection = null;
-    await engine.functions.mysql_connect();
+    global.mysql_connection = await engine.functions.mysql_connect();
 
     // ======= [ PAGES ] =======
-
     let _pages = await engine.functions.mysql_fetch("SELECT * FROM `pages` WHERE `status` = '1'");
 
     if (_pages.length <= 0) {
         app.get('/', (req, res) => {
             res.render('error', {
-                // pageName: () => 'Server Error',
-                // content: () => 'Pages not found in the database',
-
                 name: () => '500',
                 desc: () => 'Server Error',
                 layout: false
             });
         });
     } else {
-        for (let Index = 0; Index < _pages.length; Index++) {  // Fix: Use < instead of >
-            app.get(_pages[Index].url, (req, res) => {
-                if(fs.existsSync(`./views/${_pages[Index].performer}`)) {
-                    res.render(_pages[Index].performer, {
-                        pageName: () => _pages[Index].name,
-                    });
-                } else {
-                    res.render('error', {
-                        // pageName: () => 'Server Error',
-                        // content: () => `File <b>${_pages[Index].performer}</b> not be found in directory "./views".`,
+        for (let Index = 0; Index < _pages.length; Index++) {
+            const performerPath = `./system/routing/${_pages[Index].performer}`;
 
+            if (fs.existsSync(performerPath)) {
+                let performerFile = require(performerPath);
+                app.use(_pages[Index].url, performerFile);
+            } else {
+                app.get(_pages[Index].url, (req, res) => {
+                    res.render('error', {
                         name: () => '404',
                         desc: () => 'Not found',
                         layout: false
                     });
-                }
-            });
+                });
+            }
         }
     }
+
+    
+    // ======= [ API PAGES ] =======
+    app.use(express.json());
+    app.use('/api/auth', require(`./system/routing/api/auth.js`));
+
+
+    
+    // ======= [ ERROR PAGE ] =======
+    app.use((req, res, next) => {
+        res.status(404).render('error', {
+            name: '404',
+            desc: 'Not Found',
+            layout: false
+        });
+    });
 })();
+
 
 
 

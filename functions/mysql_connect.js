@@ -1,6 +1,6 @@
 async function mysql_connect() {
     try {
-        mysql_connection = await mysql.createConnection({
+        const connection = await mysql.createConnection({
             host: EngineConfig.mysql.host,
             user: EngineConfig.mysql.username,
             password: EngineConfig.mysql.password,
@@ -9,8 +9,10 @@ async function mysql_connect() {
         });
 
         console.log(`${EngineConfig.prefix} Connect to MySQL - ✅`);
+        return connection;
     } catch (error) {
-        console.log(`${EngineConfig.prefix} Connect to MySQL - ❌\nError: ${error}`);
+        console.error(`${EngineConfig.prefix} Connect to MySQL - ❌\nError: ${error}`);
+        throw error;
     }
 }
 
