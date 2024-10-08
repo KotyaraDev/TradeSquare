@@ -15,9 +15,9 @@
   },
   "homepage": "https://github.com/KotyaraDev/TradeSquare#readme",
   "dependencies": {
-    "body-parser": "^1.20.2",
+    "body-parser": "^1.20.3",
     "cookie-parser": "^1.4.6",
-    "express": "^4.19.2",
+    "express": "^4.21.0",
     "express-handlebars": "^7.1.2",
     "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
